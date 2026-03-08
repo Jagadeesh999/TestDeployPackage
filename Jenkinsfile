@@ -11,8 +11,8 @@ pipeline {
 
     environment {
         SAG_HOME        = 'C:\\SoftwareAG11'
-        ABE_HOME        = "${SAG_HOME}\\common\\lib\\ant"
-        ABE_EXEC        = "${ABE_HOME}\\bin\\ant.bat"
+        ABE_HOME        = "${SAG_HOME}\\common\\AssetBuildEnvironment"
+        ABE_EXEC        = "${SAG_HOME}\\common\\lib\\ant\\bin\\ant.bat"
         JAVA_HOME       = "${SAG_HOME}\\jvm\\jvm"
         GIT_REPO_URL       = 'https://github.com/Jagadeesh999/TestDeployPackage'
         GIT_CREDENTIALS_ID = 'git-credentials'
@@ -69,11 +69,22 @@ pipeline {
                     if (!fileExists(ENV_CONFIG_FILE)) {
                         error("Environment config not found: ${ENV_CONFIG_FILE}")
                     }
-                    def props = readProperties file: ENV_CONFIG_FILE
+                    // Parse .properties file manually - no plugin required
+                    def propsText = readFile(file: ENV_CONFIG_FILE)
+                    def props = [:]
+                    propsText.readLines().each { line ->
+                        line = line.trim()
+                        if (line && !line.startsWith('#')) {
+                            def parts = line.split('=', 2)
+                            if (parts.length == 2) {
+                                props[parts[0].trim()] = parts[1].trim()
+                            }
+                        }
+                    }
                     env.IS_HOST           = props['is.host']
                     env.IS_PORT           = props['is.port']
-                    env.IS_PROTOCOL       = props['is.protocol'] ?: 'http'
-                    env.IS_ADMIN_USER     = props['is.admin.user'] ?: 'Administrator'
+                    env.IS_PROTOCOL       = props.containsKey('is.protocol') ? props['is.protocol'] : 'http'
+                    env.IS_ADMIN_USER     = props.containsKey('is.admin.user') ? props['is.admin.user'] : 'Administrator'
                     env.IS_CREDENTIALS_ID = props['is.credentials.id']
                     echo "Loaded config for ${params.TARGET_ENV}: ${env.IS_HOST}:${env.IS_PORT}"
                 }

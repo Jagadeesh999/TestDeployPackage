@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Asset Composite Descriptor (ACD) for webMethods IS Package: TestDeployPackage
+    Git Source: https://github.com/Jagadeesh999/TestDeployPackage
+-->
+<AssetCompositeDescriptor
+    xmlns="http://www.softwareag.com/abe/acd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.softwareag.com/abe/acd acd.xsd">
+
+    <CompositeInfo
+        name="TestDeployPackage"
+        version="1.0"
+        description="IS Package: TestDeployPackage"/>
+
+    <Assets>
+        <Asset
+            type="IS_PACKAGE"
+            name="TestDeployPackage"
+            location="packages\TestDeployPackage">
+            <Properties>
+                <Property name="includeACLs"       value="true"/>
+                <Property name="includeTests"      value="false"/>
+                <Property name="includeUserGroups" value="false"/>
+            </Properties>
+        </Asset>
+    </Assets>
+
+    <Dependencies>
+        <!-- Add dependent packages here if needed. Example:
+        <Dependency name="WmPublic" version="10.15"/>
+        -->
+    </Dependencies>
+
+</AssetCompositeDescriptor>

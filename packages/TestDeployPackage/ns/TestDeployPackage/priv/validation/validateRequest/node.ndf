@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Values version="2.0">
+  <value name="svc_type">V</value>
+  <value name="svc_subtype">unknown</value>
+  <value name="stateless">yes</value>
+  <value name="description">Validates incoming request fields before processing</value>
+  <record name="sig" javaclass="com.wm.util.Values">
+    <record name="input" javaclass="com.wm.util.Values">
+      <value name="requestId">requestId</value>
+      <value name="payload">payload</value>
+    </record>
+    <record name="output" javaclass="com.wm.util.Values">
+      <value name="isValid">isValid</value>
+    </record>
+  </record>
+</Values>

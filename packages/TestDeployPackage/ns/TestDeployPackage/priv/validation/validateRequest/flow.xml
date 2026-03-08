@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow>
+  <!-- Check requestId is not null -->
+  <step name="checkRequestId">
+    <svc>pub.flow:throwExceptionForNull</svc>
+    <input>
+      <value name="fieldName">requestId</value>
+      <value name="value" from="requestId"/>
+    </input>
+  </step>
+
+  <!-- Check payload is not null -->
+  <step name="checkPayload">
+    <svc>pub.flow:throwExceptionForNull</svc>
+    <input>
+      <value name="fieldName">payload</value>
+      <value name="value" from="payload"/>
+    </input>
+  </step>
+
+  <!-- Mark valid -->
+  <step name="setValid">
+    <svc>pub.flow:setValues</svc>
+    <input>
+      <value name="isValid">true</value>
+    </input>
+  </step>
+</flow>

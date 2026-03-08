@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow>
+  <!-- Generate a response ID -->
+  <step name="generateResponseId">
+    <svc>pub.util:generateUniqueID</svc>
+    <output>
+      <value name="id" to="responseId"/>
+    </output>
+  </step>
+
+  <!-- Log the processing -->
+  <step name="logProcessing">
+    <svc>pub.flow:debugLog</svc>
+    <input>
+      <value name="message">Processing request: %requestId%</value>
+      <value name="function">logmsg</value>
+    </input>
+  </step>
+
+  <!-- Set result -->
+  <step name="setResult">
+    <svc>pub.flow:setValues</svc>
+    <input>
+      <value name="result">PROCESSED</value>
+    </input>
+  </step>
+</flow>

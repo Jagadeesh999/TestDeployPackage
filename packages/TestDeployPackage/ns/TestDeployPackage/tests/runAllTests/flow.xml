@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow>
+  <!-- Test 1: getStatus returns expected fields -->
+  <step name="testGetStatus">
+    <svc>TestDeployPackage.pub:getStatus</svc>
+    <o>
+      <value name="packageName" to="t_packageName"/>
+      <value name="status"      to="t_status"/>
+    </o>
+  </step>
+
+  <!-- Assert packageName == TestDeployPackage -->
+  <step name="assertPackageName">
+    <svc>pub.flow:assertEqual</svc>
+    <input>
+      <value name="expected">TestDeployPackage</value>
+      <value name="actual"   from="t_packageName"/>
+      <value name="message">getStatus: packageName mismatch</value>
+    </input>
+  </step>
+
+  <!-- Test 2: processRequest handles valid input -->
+  <step name="testProcessRequest">
+    <svc>TestDeployPackage.pub:processRequest</svc>
+    <input>
+      <value name="requestId">TEST-001</value>
+      <value name="payload">SamplePayload</value>
+    </input>
+    <o>
+      <value name="status" to="t_status"/>
+    </o>
+  </step>
+
+  <!-- Assert status == SUCCESS -->
+  <step name="assertStatus">
+    <svc>pub.flow:assertEqual</svc>
+    <input>
+      <value name="expected">SUCCESS</value>
+      <value name="actual"   from="t_status"/>
+      <value name="message">processRequest: unexpected status</value>
+    </input>
+  </step>
+</flow>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Values version="2.0">
+  <value name="svc_type">V</value>
+  <value name="svc_subtype">unknown</value>
+  <value name="stateless">yes</value>
+  <value name="description">WmTestSuite entry point - runs all unit tests for TestDeployPackage</value>
+</Values>

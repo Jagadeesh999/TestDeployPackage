@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow>
+  <step name="logStartup">
+    <svc>pub.flow:debugLog</svc>
+    <input>
+      <value name="message">TestDeployPackage started successfully.</value>
+      <value name="function">logmsg</value>
+    </input>
+  </step>
+</flow>

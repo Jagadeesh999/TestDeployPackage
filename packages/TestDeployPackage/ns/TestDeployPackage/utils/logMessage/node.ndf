@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Values version="2.0">
+  <value name="svc_type">V</value>
+  <value name="svc_subtype">unknown</value>
+  <value name="stateless">yes</value>
+  <value name="description">Standardised logging utility for the package</value>
+  <record name="sig" javaclass="com.wm.util.Values">
+    <record name="input" javaclass="com.wm.util.Values">
+      <value name="level">level</value>
+      <value name="message">message</value>
+      <value name="context">context</value>
+    </record>
+    <record name="output" javaclass="com.wm.util.Values">
+    </record>
+  </record>
+</Values>

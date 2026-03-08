@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow>
+  <!-- Step 1: Validate input -->
+  <step name="validateInput">
+    <svc>TestDeployPackage.priv.validation:validateRequest</svc>
+    <input>
+      <value name="requestId" from="requestId"/>
+      <value name="payload"   from="payload"/>
+    </input>
+  </step>
+
+  <!-- Step 2: Execute core business logic -->
+  <step name="executeLogic">
+    <svc>TestDeployPackage.priv.processor:execute</svc>
+    <input>
+      <value name="requestId" from="requestId"/>
+      <value name="payload"   from="payload"/>
+    </input>
+  </step>
+
+  <!-- Step 3: Build success response -->
+  <step name="buildResponse">
+    <svc>pub.flow:setValues</svc>
+    <input>
+      <value name="status">SUCCESS</value>
+      <value name="message">Request processed successfully</value>
+    </input>
+  </step>
+</flow>

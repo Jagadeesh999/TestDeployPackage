@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow>
+  <step name="setPackageName">
+    <svc>pub.flow:setValues</svc>
+    <input>
+      <value name="packageName">TestDeployPackage</value>
+      <value name="version">1.0.0</value>
+      <value name="status">ACTIVE</value>
+    </input>
+  </step>
+</flow>

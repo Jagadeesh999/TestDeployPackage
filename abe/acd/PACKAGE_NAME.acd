@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Asset Composite Descriptor (ACD) — Template
+    Copy this file to abe\acd\<YOUR_PACKAGE_NAME>.acd
+    Replace ${PACKAGE_NAME} with your actual package name.
+    Jenkins performs this substitution automatically via PowerShell.
+-->
+<AssetCompositeDescriptor
+    xmlns="http://www.softwareag.com/abe/acd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.softwareag.com/abe/acd acd.xsd">
+
+    <CompositeInfo
+        name="${PACKAGE_NAME}"
+        version="1.0"
+        description="IS Package: ${PACKAGE_NAME}"/>
+
+    <Assets>
+        <Asset
+            type="IS_PACKAGE"
+            name="${PACKAGE_NAME}"
+            location="packages\${PACKAGE_NAME}">
+            <Properties>
+                <Property name="includeACLs"       value="true"/>
+                <Property name="includeTests"      value="false"/>
+                <Property name="includeUserGroups" value="false"/>
+            </Properties>
+        </Asset>
+    </Assets>
+
+    <Dependencies>
+        <!-- Example:
+        <Dependency name="WmPublic" version="10.15"/>
+        -->
+    </Dependencies>
+
+</AssetCompositeDescriptor>

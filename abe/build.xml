@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="webMethods-IS-Package-Build" default="build" basedir=".">
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         webMethods IS Package Build using Asset Build Environment (ABE)
+         Windows Server Edition
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <description>Build webMethods Integration Server package using ABE on Windows</description>
+
+    <!-- ── Properties ─────────────────────────────────────────────────── -->
+    <property name="project.name"  value="IS-Package-Build"/>
+    <property name="package.name"  value="${PACKAGE_NAME}"/>
+    <property name="build.number"  value="0"/>
+
+    <!-- Windows paths — override from command line in Jenkinsfile -->
+    <property name="sag.home"      value="C:\SoftwareAG11"/>
+    <property name="abe.home"      value="${sag.home}\common\AssetBuildEnvironment"/>
+    <property name="abe.lib"       value="${abe.home}\lib"/>
+
+    <property name="src.dir"       value="${basedir}\..\packages"/>
+    <property name="build.dir"     value="${basedir}\..\build"/>
+    <property name="dist.dir"      value="${basedir}\..\dist"/>
+    <property name="acd.dir"       value="${basedir}\acd"/>
+    <property name="reports.dir"   value="${build.dir}\reports"/>
+
+    <!-- ── Classpath ──────────────────────────────────────────────────── -->
+    <path id="abe.classpath">
+        <fileset dir="${abe.lib}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <!-- ── Task Definitions ───────────────────────────────────────────── -->
+    <taskdef resource="com/softwareag/abe/ant/antlib.xml"
+             classpathref="abe.classpath"/>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         TARGETS
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <!-- CLEAN -->
+    <target name="clean" description="Remove previous build output">
+        <delete dir="${build.dir}" quiet="true"/>
+        <delete dir="${dist.dir}"  quiet="true"/>
+        <echo message="[clean] Directories removed"/>
+    </target>
+
+    <!-- INIT -->
+    <target name="init" depends="clean" description="Create output directories">
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${reports.dir}"/>
+        <tstamp>
+            <format property="build.timestamp" pattern="yyyyMMdd-HHmmss"/>
+        </tstamp>
+        <echo message="[init] Timestamp : ${build.timestamp}"/>
+        <echo message="[init] Package   : ${package.name}"/>
+        <echo message="[init] Build #   : ${build.number}"/>
+    </target>
+
+    <!-- VALIDATE -->
+    <target name="validate" depends="init" description="Validate source assets">
+        <available file="${src.dir}\${package.name}"
+                   type="dir"
+                   property="package.dir.exists"/>
+        <fail unless="package.dir.exists"
+              message="[validate] Package directory not found: ${src.dir}\${package.name}"/>
+
+        <available file="${acd.dir}\${package.name}.acd"
+                   type="file"
+                   property="acd.file.exists"/>
+        <fail unless="acd.file.exists"
+              message="[validate] ACD file not found: ${acd.dir}\${package.name}.acd"/>
+
+        <echo message="[validate] ✅ Source and ACD validated"/>
+    </target>
+
+    <!-- BUILD -->
+    <target name="build" depends="validate" description="Build composite via ABE">
+        <echo message="[build] Running ABE build for: ${package.name}"/>
+
+        <abeTask
+            abeHome="${abe.home}"
+            projectDir="${acd.dir}"
+            acdFile="${acd.dir}\${package.name}.acd"
+            outputDir="${dist.dir}"
+            logDir="${reports.dir}"
+            buildNumber="${build.number}"/>
+
+        <!-- Rename output to include build number -->
+        <move todir="${dist.dir}">
+            <fileset dir="${dist.dir}">
+                <include name="${package.name}*.zip"/>
+                <exclude name="${package.name}_${build.number}.zip"/>
+            </fileset>
+            <mapper type="regexp"
+                    from="^(${package.name})(.*)\.zip$$"
+                    to="\1_${build.number}.zip"/>
+        </move>
+
+        <echo message="[build] ✅ Output: ${dist.dir}\${package.name}_${build.number}.zip"/>
+    </target>
+
+    <!-- REPORT -->
+    <target name="report" depends="build" description="Write build summary">
+        <echo file="${reports.dir}\build-summary.txt">[Build Summary]
+Package    : ${package.name}
+Build #    : ${build.number}
+Timestamp  : ${build.timestamp}
+Output     : ${dist.dir}\${package.name}_${build.number}.zip
+        </echo>
+        <echo message="[report] Summary written to ${reports.dir}\build-summary.txt"/>
+    </target>
+
+</project>

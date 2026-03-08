@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ACLs>
+  <!--
+    Access Control List for TestDeployPackage
+    Defines which IS groups can access which services
+  -->
+
+  <!-- Public services: accessible by Developers and Administrators -->
+  <ACL name="TestDeployPackage.pub">
+    <allow>Developers</allow>
+    <allow>Administrators</allow>
+  </ACL>
+
+  <!-- Private services: Administrators only -->
+  <ACL name="TestDeployPackage.priv">
+    <allow>Administrators</allow>
+  </ACL>
+
+  <!-- Test services: Developers and Administrators -->
+  <ACL name="TestDeployPackage.tests">
+    <allow>Developers</allow>
+    <allow>Administrators</allow>
+  </ACL>
+</ACLs>

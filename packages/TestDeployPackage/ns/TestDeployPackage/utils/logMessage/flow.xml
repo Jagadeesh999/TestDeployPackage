@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow>
+  <step name="writeLog">
+    <svc>pub.flow:debugLog</svc>
+    <input>
+      <value name="message" from="message"/>
+      <value name="function">logmsg</value>
+    </input>
+  </step>
+</flow>

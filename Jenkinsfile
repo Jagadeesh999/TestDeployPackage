@@ -10,23 +10,16 @@ pipeline {
     }
 
     environment {
-        // ── SAG / ABE Paths (Windows) ────────────────────────────────────────
         SAG_HOME        = 'C:\\SoftwareAG11'
-        ABE_HOME        = "${SAG_HOME}\\common\\AssetBuildEnvironment"
-        ABE_EXEC        = "${ABE_HOME}\\ant\\bin\\ant.bat"
+        ABE_HOME        = "${SAG_HOME}\\common\\lib\\ant"
+        ABE_EXEC        = "${ABE_HOME}\\bin\\ant.bat"
         JAVA_HOME       = "${SAG_HOME}\\jvm\\jvm"
-
-        // ── Repository ──────────────────────────────────────────────────────
         GIT_REPO_URL       = 'https://github.com/Jagadeesh999/TestDeployPackage'
         GIT_CREDENTIALS_ID = 'git-credentials'
-
-        // ── Build Artifact Paths ─────────────────────────────────────────────
         BUILD_DIR       = "${WORKSPACE}\\build"
         DIST_DIR        = "${WORKSPACE}\\dist"
         ABE_PROJECT_DIR = "${WORKSPACE}\\abe"
         COMPOSITE_FILE  = "${DIST_DIR}\\${params.PACKAGE_NAME}_${BUILD_NUMBER}.zip"
-
-        // ── Environment Config ───────────────────────────────────────────────
         ENV_CONFIG_FILE = "${WORKSPACE}\\config\\environments\\${params.TARGET_ENV}.properties"
     }
 
@@ -39,23 +32,21 @@ pipeline {
 
     stages {
 
-        // ── 1. VALIDATE ──────────────────────────────────────────────────────
         stage('Validate Parameters') {
             steps {
                 script {
                     if (!params.PACKAGE_NAME?.trim()) {
-                        error("❌ PACKAGE_NAME is required.")
+                        error("PACKAGE_NAME is required.")
                     }
                     def validEnvs = ['DEV', 'SIT', 'UAT', 'PROD']
                     if (!validEnvs.contains(params.TARGET_ENV)) {
-                        error("❌ TARGET_ENV must be one of: ${validEnvs.join(', ')}")
+                        error("TARGET_ENV must be one of: ${validEnvs.join(', ')}")
                     }
-                    echo "✅ Parameters validated — Package: ${params.PACKAGE_NAME}  Env: ${params.TARGET_ENV}"
+                    echo "Parameters validated - Package: ${params.PACKAGE_NAME}  Env: ${params.TARGET_ENV}"
                 }
             }
         }
 
-        // ── 2. CHECKOUT ──────────────────────────────────────────────────────
         stage('Checkout Source') {
             steps {
                 cleanWs()
@@ -68,47 +59,33 @@ pipeline {
                     ]],
                     extensions: [[$class: 'CloneOption', depth: 1, shallow: true]]
                 ])
-                echo "✅ Source checked out from branch: ${params.BRANCH_NAME}"
+                echo "Source checked out from branch: ${params.BRANCH_NAME}"
             }
         }
 
-        // ── 3. LOAD ENV CONFIG ───────────────────────────────────────────────
         stage('Load Environment Config') {
             steps {
                 script {
                     if (!fileExists(ENV_CONFIG_FILE)) {
-                        error("❌ Environment config not found: ${ENV_CONFIG_FILE}")
+                        error("Environment config not found: ${ENV_CONFIG_FILE}")
                     }
                     def props = readProperties file: ENV_CONFIG_FILE
-                    env.IS_HOST            = props['is.host']
-                    env.IS_PORT            = props['is.port']
-                    env.IS_PROTOCOL        = props['is.protocol'] ?: 'http'
-                    env.IS_ADMIN_USER      = props['is.admin.user'] ?: 'Administrator'
-                    env.IS_CREDENTIALS_ID  = props['is.credentials.id']
-                    echo "✅ Loaded config for ${params.TARGET_ENV}: ${env.IS_HOST}:${env.IS_PORT}"
+                    env.IS_HOST           = props['is.host']
+                    env.IS_PORT           = props['is.port']
+                    env.IS_PROTOCOL       = props['is.protocol'] ?: 'http'
+                    env.IS_ADMIN_USER     = props['is.admin.user'] ?: 'Administrator'
+                    env.IS_CREDENTIALS_ID = props['is.credentials.id']
+                    echo "Loaded config for ${params.TARGET_ENV}: ${env.IS_HOST}:${env.IS_PORT}"
                 }
             }
         }
 
-        // ── 4. ABE BUILD ─────────────────────────────────────────────────────
         stage('ABE Build') {
             steps {
                 script {
-                    // Create build/dist directories on Windows
                     bat "if not exist \"${BUILD_DIR}\" mkdir \"${BUILD_DIR}\""
                     bat "if not exist \"${DIST_DIR}\" mkdir \"${DIST_DIR}\""
-
-                    // Substitute package name in ACD file using PowerShell
-                    powershell """
-                        \$acdSrc  = "${WORKSPACE}\\abe\\acd\\PACKAGE_NAME.acd"
-                        \$acdDest = "${ABE_PROJECT_DIR}\\acd\\${params.PACKAGE_NAME}.acd"
-                        New-Item -ItemType Directory -Force -Path "${ABE_PROJECT_DIR}\\acd" | Out-Null
-                        (Get-Content \$acdSrc) -replace '\\$\\{PACKAGE_NAME\\}', '${params.PACKAGE_NAME}' |
-                            Set-Content \$acdDest
-                        Write-Host "ACD written to \$acdDest"
-                    """
-
-                    // Run ABE build via ant.bat
+                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Prepare-ACD.ps1\" -PackageName ${params.PACKAGE_NAME} -WorkspaceDir \"${WORKSPACE}\" -AbeProjectDir \"${ABE_PROJECT_DIR}\""
                     bat """
                         set JAVA_HOME=${JAVA_HOME}
                         "${ABE_EXEC}" -f "${ABE_PROJECT_DIR}\\build.xml" ^
@@ -120,11 +97,10 @@ pipeline {
                             -Dbuild.number=${BUILD_NUMBER} ^
                             build
                     """
-
                     if (!fileExists(COMPOSITE_FILE)) {
-                        error("❌ ABE composite file not created: ${COMPOSITE_FILE}")
+                        error("ABE composite file not created: ${COMPOSITE_FILE}")
                     }
-                    echo "✅ ABE build complete: ${COMPOSITE_FILE}"
+                    echo "ABE build complete: ${COMPOSITE_FILE}"
                 }
             }
             post {
@@ -134,20 +110,13 @@ pipeline {
             }
         }
 
-        // ── 5. UNIT TESTS ────────────────────────────────────────────────────
         stage('Run Unit Tests') {
             when {
                 expression { !params.SKIP_TESTS }
             }
             steps {
                 script {
-                    powershell """
-                        & "${WORKSPACE}\\scripts\\Run-Tests.ps1" `
-                            -Host   "${env.IS_HOST}" `
-                            -Port   "${env.IS_PORT}" `
-                            -Package "${params.PACKAGE_NAME}" `
-                            -ReportDir "${BUILD_DIR}\\test-reports"
-                    """
+                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Run-Tests.ps1\" -Host \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Package \"${params.PACKAGE_NAME}\" -ReportDir \"${BUILD_DIR}\\test-reports\""
                 }
             }
             post {
@@ -158,7 +127,6 @@ pipeline {
             }
         }
 
-        // ── 6. BACKUP (non-DEV) ──────────────────────────────────────────────
         stage('Backup Existing Package') {
             when {
                 expression { params.TARGET_ENV != 'DEV' }
@@ -169,22 +137,12 @@ pipeline {
                     usernameVariable: 'IS_USER',
                     passwordVariable: 'IS_PASS'
                 )]) {
-                    powershell """
-                        & "${WORKSPACE}\\scripts\\Backup-Package.ps1" `
-                            -Host      "${env.IS_HOST}" `
-                            -Port      "${env.IS_PORT}" `
-                            -Protocol  "${env.IS_PROTOCOL}" `
-                            -User      "${IS_USER}" `
-                            -Password  "${IS_PASS}" `
-                            -Package   "${params.PACKAGE_NAME}" `
-                            -BackupDir "${DIST_DIR}\\backups"
-                    """
+                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Backup-Package.ps1\" -Host \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -BackupDir \"${DIST_DIR}\\backups\""
                 }
-                echo "✅ Package backed up"
+                echo "Package backed up"
             }
         }
 
-        // ── 7. DEPLOY ────────────────────────────────────────────────────────
         stage('Deploy Package') {
             steps {
                 withCredentials([usernamePassword(
@@ -192,23 +150,12 @@ pipeline {
                     usernameVariable: 'IS_USER',
                     passwordVariable: 'IS_PASS'
                 )]) {
-                    powershell """
-                        & "${WORKSPACE}\\scripts\\Deploy-Package.ps1" `
-                            -Host          "${env.IS_HOST}" `
-                            -Port          "${env.IS_PORT}" `
-                            -Protocol      "${env.IS_PROTOCOL}" `
-                            -User          "${IS_USER}" `
-                            -Password      "${IS_PASS}" `
-                            -Package       "${params.PACKAGE_NAME}" `
-                            -CompositeFile "${COMPOSITE_FILE}" `
-                            -Reload        \$${params.RELOAD_PKG}
-                    """
+                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Deploy-Package.ps1\" -Host \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -CompositeFile \"${COMPOSITE_FILE}\" -Reload ${params.RELOAD_PKG}"
                 }
-                echo "✅ Package deployed to ${params.TARGET_ENV}"
+                echo "Package deployed to ${params.TARGET_ENV}"
             }
         }
 
-        // ── 8. HEALTH CHECK ──────────────────────────────────────────────────
         stage('Post-Deployment Health Check') {
             steps {
                 withCredentials([usernamePassword(
@@ -216,32 +163,23 @@ pipeline {
                     usernameVariable: 'IS_USER',
                     passwordVariable: 'IS_PASS'
                 )]) {
-                    powershell """
-                        & "${WORKSPACE}\\scripts\\Health-Check.ps1" `
-                            -Host     "${env.IS_HOST}" `
-                            -Port     "${env.IS_PORT}" `
-                            -Protocol "${env.IS_PROTOCOL}" `
-                            -User     "${IS_USER}" `
-                            -Password "${IS_PASS}" `
-                            -Package  "${params.PACKAGE_NAME}"
-                    """
+                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Health-Check.ps1\" -Host \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\""
                 }
-                echo "✅ Health check passed"
+                echo "Health check passed"
             }
         }
     }
 
-    // ── POST ACTIONS ─────────────────────────────────────────────────────────
     post {
         success {
-            echo "🎉 Pipeline complete! Package: ${params.PACKAGE_NAME} → ${params.TARGET_ENV}"
+            echo "Pipeline complete! Package: ${params.PACKAGE_NAME} deployed to ${params.TARGET_ENV}"
             archiveArtifacts artifacts: "dist\\*.zip", allowEmptyArchive: true
         }
         failure {
-            echo "❌ Pipeline failed. Review logs above."
+            echo "Pipeline failed. Review logs above."
             script {
                 if (params.TARGET_ENV != 'DEV') {
-                    echo "⚠️  Run rollback if needed: scripts\\Rollback-Package.ps1"
+                    echo "Run rollback if needed: scripts\\Rollback-Package.ps1"
                 }
             }
         }

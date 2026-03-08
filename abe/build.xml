@@ -15,8 +15,8 @@
 
     <!-- Windows paths — override from command line in Jenkinsfile -->
     <property name="sag.home"      value="C:\SoftwareAG11"/>
-    <property name="abe.home"      value="${sag.home}\common\AssetBuildEnvironment"/>
-    <property name="abe.lib"       value="${abe.home}\lib"/>
+    <property name="abe.home"      value="${sag.home}\common\lib\ant"/>
+    <property name="abe.lib"       value="${sag.home}\common\AssetBuildEnvironment\lib"/>
 
     <property name="src.dir"       value="${basedir}\..\packages"/>
     <property name="build.dir"     value="${basedir}\..\build"/>

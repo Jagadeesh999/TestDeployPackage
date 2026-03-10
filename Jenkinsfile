@@ -2,24 +2,31 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'PACKAGE_NAME',     defaultValue: 'TestDeployPackage',     description: 'webMethods IS Package Name to deploy')
-        string(name: 'TARGET_ENV',       defaultValue: 'DEV',  description: 'Target Environment: DEV | SIT | UAT | PROD')
-        string(name: 'BRANCH_NAME',      defaultValue: 'main', description: 'Git branch to build from')
-        booleanParam(name: 'SKIP_TESTS', defaultValue: false,  description: 'Skip unit tests')
-        booleanParam(name: 'RELOAD_PKG', defaultValue: true,   description: 'Reload package after deployment')
+        string(name: 'PACKAGE_NAME',     defaultValue: 'TestDeployPackage', description: 'webMethods IS Package Name to deploy')
+        string(name: 'TARGET_ENV',       defaultValue: 'DEV',               description: 'Target Environment: DEV | SIT | UAT | PROD')
+        string(name: 'BRANCH_NAME',      defaultValue: 'main',              description: 'Git branch to build from')
+        booleanParam(name: 'SKIP_TESTS', defaultValue: false,               description: 'Skip unit tests')
+        booleanParam(name: 'RELOAD_PKG', defaultValue: true,                description: 'Reload package after deployment')
     }
 
     environment {
-        SAG_HOME        = 'C:\\SoftwareAG11'
-        ABE_HOME        = "${SAG_HOME}\\common\\AssetBuildEnvironment"
-        ABE_EXEC        = "${SAG_HOME}\\common\\lib\\ant\\bin\\ant.bat"
-        JAVA_HOME       = "${SAG_HOME}\\jvm\\jvm"
+        // -- SAG 11.x Paths (Windows - forward slashes for ABE, backslashes for bat) --
+        SAG_HOME         = 'C:\\SoftwareAG11'
+        SAG_HOME_FWD     = 'C:/SoftwareAG11'
+        ABE_HOME         = 'C:\\SoftwareAG11\\common\\AssetBuildEnvironment'
+        ABE_BUILD_BAT    = 'C:\\SoftwareAG11\\common\\AssetBuildEnvironment\\bin\\build.bat'
+        IS_CONFIG_DIR    = 'C:/SoftwareAG11/IntegrationServer/instances/default/config'
+
+        // -- Repository --
         GIT_REPO_URL       = 'https://github.com/Jagadeesh999/TestDeployPackage'
         GIT_CREDENTIALS_ID = 'git-credentials'
-        BUILD_DIR       = "${WORKSPACE}\\build"
-        DIST_DIR        = "${WORKSPACE}\\dist"
-        ABE_PROJECT_DIR = "${WORKSPACE}\\abe"
-        COMPOSITE_FILE  = "${DIST_DIR}\\${params.PACKAGE_NAME}_${BUILD_NUMBER}.zip"
+
+        // -- Build Paths --
+        BUILD_DIR      = "${WORKSPACE}\\build"
+        DIST_DIR       = "${WORKSPACE}\\dist"
+        PACKAGES_DIR   = "${WORKSPACE}\\packages"
+
+        // -- Environment Config --
         ENV_CONFIG_FILE = "${WORKSPACE}\\config\\environments\\${params.TARGET_ENV}.properties"
     }
 
@@ -32,6 +39,7 @@ pipeline {
 
     stages {
 
+        // -- 1. VALIDATE --
         stage('Validate Parameters') {
             steps {
                 script {
@@ -47,6 +55,7 @@ pipeline {
             }
         }
 
+        // -- 2. CHECKOUT --
         stage('Checkout Source') {
             steps {
                 cleanWs()
@@ -63,13 +72,13 @@ pipeline {
             }
         }
 
+        // -- 3. LOAD ENV CONFIG --
         stage('Load Environment Config') {
             steps {
                 script {
                     if (!fileExists(ENV_CONFIG_FILE)) {
                         error("Environment config not found: ${ENV_CONFIG_FILE}")
                     }
-                    // Parse .properties file manually - no plugin required
                     def propsText = readFile(file: ENV_CONFIG_FILE)
                     def props = [:]
                     propsText.readLines().each { line ->
@@ -83,7 +92,7 @@ pipeline {
                     }
                     env.IS_HOST           = props['is.host']
                     env.IS_PORT           = props['is.port']
-                    env.IS_PROTOCOL       = props.containsKey('is.protocol') ? props['is.protocol'] : 'http'
+                    env.IS_PROTOCOL       = props.containsKey('is.protocol')   ? props['is.protocol']   : 'http'
                     env.IS_ADMIN_USER     = props.containsKey('is.admin.user') ? props['is.admin.user'] : 'Administrator'
                     env.IS_CREDENTIALS_ID = props['is.credentials.id']
                     echo "Loaded config for ${params.TARGET_ENV}: ${env.IS_HOST}:${env.IS_PORT}"
@@ -91,36 +100,58 @@ pipeline {
             }
         }
 
+        // -- 4. ABE BUILD (SAG 11.x) --
         stage('ABE Build') {
             steps {
                 script {
+                    // Create output directories
                     bat "if not exist \"${BUILD_DIR}\" mkdir \"${BUILD_DIR}\""
                     bat "if not exist \"${DIST_DIR}\" mkdir \"${DIST_DIR}\""
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Prepare-ACD.ps1\" -PackageName ${params.PACKAGE_NAME} -WorkspaceDir \"${WORKSPACE}\" -AbeProjectDir \"${ABE_PROJECT_DIR}\""
+
+                    // Forward-slash versions required by ABE build.properties
+                    def workspaceFwd  = WORKSPACE.replace('\\', '/')
+                    def distDirFwd    = "${workspaceFwd}/dist"
+                    def packagesDirFwd = "${workspaceFwd}/packages"
+
+                    // Write a runtime build.properties by reading the template and substituting values
+                    def template = readFile("${WORKSPACE}\\abe\\build.properties.template")
+                    def buildProps = template
+                        .replace('build.output.dir=',       "build.output.dir=${distDirFwd}")
+                        .replace('build.source.dir=',       "build.source.dir=${packagesDirFwd}")
+                        .replace('build.source.project.dir=', "build.source.project.dir=${packagesDirFwd}")
+                        .replace('build.version=1.0',       "build.version=${BUILD_NUMBER}")
+                        .replace('is.acdl.config.dir=',     "is.acdl.config.dir=${IS_CONFIG_DIR}")
+
+                    // Write build.properties into workspace root (build.bat expects it in CWD)
+                    writeFile file: "${WORKSPACE}\\build.properties", text: buildProps
+                    echo "build.properties written to workspace root"
+
+                    // Run ABE build.bat from workspace root
                     bat """
-                        set JAVA_HOME=${JAVA_HOME}
-                        "${ABE_EXEC}" -f "${ABE_PROJECT_DIR}\\build.xml" ^
-                            -Dproject.name=${params.PACKAGE_NAME} ^
-                            -Dpackage.name=${params.PACKAGE_NAME} ^
-                            -Dsrc.dir=${WORKSPACE}\\packages ^
-                            -Dbuild.dir=${BUILD_DIR} ^
-                            -Ddist.dir=${DIST_DIR} ^
-                            -Dbuild.number=${BUILD_NUMBER} ^
-                            build
+                        cd /d "${WORKSPACE}"
+                        "${ABE_BUILD_BAT}"
                     """
-                    if (!fileExists(COMPOSITE_FILE)) {
-                        error("ABE composite file not created: ${COMPOSITE_FILE}")
+
+                    // Find the generated composite ZIP in dist output
+                    def distFiles = findFiles(glob: "dist/**/${params.PACKAGE_NAME}*.zip")
+                    if (!distFiles || distFiles.length == 0) {
+                        distFiles = findFiles(glob: "dist/**/*.zip")
                     }
-                    echo "ABE build complete: ${COMPOSITE_FILE}"
+                    if (!distFiles || distFiles.length == 0) {
+                        error("ABE build completed but no composite ZIP found under dist/")
+                    }
+                    env.COMPOSITE_FILE = "${WORKSPACE}\\${distFiles[0].path}"
+                    echo "ABE build complete. Composite: ${env.COMPOSITE_FILE}"
                 }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'build\\reports\\**\\*', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'dist/**/*.zip', allowEmptyArchive: true
                 }
             }
         }
 
+        // -- 5. UNIT TESTS --
         stage('Run Unit Tests') {
             when {
                 expression { !params.SKIP_TESTS }
@@ -138,6 +169,7 @@ pipeline {
             }
         }
 
+        // -- 6. BACKUP (non-DEV) --
         stage('Backup Existing Package') {
             when {
                 expression { params.TARGET_ENV != 'DEV' }
@@ -154,6 +186,7 @@ pipeline {
             }
         }
 
+        // -- 7. DEPLOY --
         stage('Deploy Package') {
             steps {
                 withCredentials([usernamePassword(
@@ -161,12 +194,13 @@ pipeline {
                     usernameVariable: 'IS_USER',
                     passwordVariable: 'IS_PASS'
                 )]) {
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Deploy-Package.ps1\" -Host \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -CompositeFile \"${COMPOSITE_FILE}\" -Reload ${params.RELOAD_PKG}"
+                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Deploy-Package.ps1\" -Host \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -CompositeFile \"${env.COMPOSITE_FILE}\" -Reload ${params.RELOAD_PKG}"
                 }
                 echo "Package deployed to ${params.TARGET_ENV}"
             }
         }
 
+        // -- 8. HEALTH CHECK --
         stage('Post-Deployment Health Check') {
             steps {
                 withCredentials([usernamePassword(
@@ -184,7 +218,6 @@ pipeline {
     post {
         success {
             echo "Pipeline complete! Package: ${params.PACKAGE_NAME} deployed to ${params.TARGET_ENV}"
-            archiveArtifacts artifacts: "dist\\*.zip", allowEmptyArchive: true
         }
         failure {
             echo "Pipeline failed. Review logs above."

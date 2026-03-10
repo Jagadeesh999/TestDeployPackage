@@ -1,0 +1,52 @@
+# =============================================================================
+# ABE build.properties — SAG 11.x Integration Server Package Build
+# These values are substituted at runtime by the Jenkins pipeline.
+# DO NOT hardcode paths here — Jenkins writes a filled copy at build time.
+# =============================================================================
+
+# SAG installation directory (forward slashes required)
+sag.install.dir=C:/SoftwareAG11
+
+# Output directory — Jenkins sets this to DIST_DIR at runtime
+build.output.dir=
+
+# Source directory containing the IS package folders
+# Jenkins sets this to WORKSPACE/packages at runtime
+build.source.dir=
+build.source.project.dir=
+
+# Build version — Jenkins sets this to BUILD_NUMBER at runtime
+build.version=1.0
+
+# Enable IS build only
+enable.build.IS=true
+enable.build.MWS=false
+enable.build.TaskEngine=false
+enable.build.BPM=false
+enable.build.TN=false
+enable.build.Optimize=false
+enable.build.Broker=false
+enable.build.EDA=false
+enable.build.RULES=false
+enable.build.UniversalMessaging=false
+enable.build.ApplicationPlatform=false
+enable.build.AgileApps=false
+enable.build.MFT=false
+enable.build.APIGateway=false
+enable.build.DES=false
+enable.build.CC=false
+
+# IS config directory — Jenkins sets this at runtime
+is.acdl.config.dir=
+
+# Archive settings
+enable.archive=false
+build.archive.dir=
+
+# Checkout disabled (Jenkins handles Git)
+enable.checkout=false
+
+# Logging
+build.log.enable=false
+build.logLevel=info
+build.exit.error=true

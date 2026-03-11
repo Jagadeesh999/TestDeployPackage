@@ -5,13 +5,13 @@
     Uploads the composite ZIP to Integration Server via REST API,
     installs, enables, and optionally reloads the package.
 .EXAMPLE
-    .\Deploy-Package.ps1 -Host "is-server" -Port "5555" -Protocol "http" `
+    .\Deploy-Package.ps1 -ISHost "is-server" -Port "5555" -Protocol "http" `
         -User "Administrator" -Password "manage" `
         -Package "MyPackage" -CompositeFile "C:\build\MyPackage_1.zip" -Reload $true
 #>
 
 param(
-    [Parameter(Mandatory)][string] $Host,
+    [Parameter(Mandatory)][string] $ISHost,
     [Parameter(Mandatory)][string] $Port,
     [string]  $Protocol      = "http",
     [Parameter(Mandatory)][string] $User,
@@ -27,7 +27,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 #  Helpers 
-$BaseUrl   = "${Protocol}://${Host}:${Port}"
+$BaseUrl   = "${Protocol}://${ISHost}:${Port}"
 $CredsBytes = [System.Text.Encoding]::ASCII.GetBytes("${User}:${Password}")
 $BasicAuth = "Basic " + [Convert]::ToBase64String($CredsBytes)
 $Headers   = @{ Authorization = $BasicAuth }

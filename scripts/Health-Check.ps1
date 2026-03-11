@@ -4,7 +4,7 @@
 #>
 
 param(
-    [Parameter(Mandatory)][string] $Host,
+    [Parameter(Mandatory)][string] $ISHost,
     [Parameter(Mandatory)][string] $Port,
     [string]  $Protocol   = "http",
     [Parameter(Mandatory)][string] $User,
@@ -17,7 +17,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$BaseUrl    = "${Protocol}://${Host}:${Port}"
+$BaseUrl    = "${Protocol}://${ISHost}:${Port}"
 $CredsBytes = [System.Text.Encoding]::ASCII.GetBytes("${User}:${Password}")
 $BasicAuth  = "Basic " + [Convert]::ToBase64String($CredsBytes)
 $Headers    = @{ Authorization = $BasicAuth }

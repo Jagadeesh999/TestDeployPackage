@@ -4,7 +4,7 @@
 #>
 
 param(
-    [Parameter(Mandatory)][string] $Host,
+    [Parameter(Mandatory)][string] $ISHost,
     [Parameter(Mandatory)][string] $Port,
     [string]  $Protocol    = "http",
     [Parameter(Mandatory)][string] $User,
@@ -46,7 +46,7 @@ if ($confirm -ne "yes") {
 
 # Delegate to Deploy-Package.ps1
 & "$PSScriptRoot\Deploy-Package.ps1" `
-    -Host          $Host `
+    -ISHost         $ISHost `
     -Port          $Port `
     -Protocol      $Protocol `
     -User          $User `

@@ -23,21 +23,21 @@ if (-not $BackupFile) {
               Sort-Object LastWriteTime -Descending |
               Select-Object -First 1
     if (-not $latest) {
-        Write-Error "❌ No backup found in $BackupDir for package $Package"
+        Write-Error " No backup found in $BackupDir for package $Package"
         exit 1
     }
     $BackupFile = $latest.FullName
 }
 
 if (-not (Test-Path $BackupFile)) {
-    Write-Error "❌ Backup file not found: $BackupFile"
+    Write-Error " Backup file not found: $BackupFile"
     exit 1
 }
 
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-Write-Host "  ⚠️  ROLLBACK: $Package"
+Write-Host ""
+Write-Host "    ROLLBACK: $Package"
 Write-Host "  Using backup: $BackupFile"
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Write-Host ""
 $confirm = Read-Host "Confirm rollback? (yes/no)"
 if ($confirm -ne "yes") {
     Write-Host "Rollback cancelled."
@@ -55,4 +55,4 @@ if ($confirm -ne "yes") {
     -CompositeFile $BackupFile `
     -Reload        $true
 
-Write-Host "✅ Rollback of $Package completed."
+Write-Host " Rollback of $Package completed."

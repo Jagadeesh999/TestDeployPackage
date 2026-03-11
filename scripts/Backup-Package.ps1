@@ -26,10 +26,10 @@ if (-not (Test-Path $BackupDir)) {
     New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 }
 
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Write-Host ""
 Write-Host "  Backing up IS Package: $Package"
 Write-Host "  Backup file: $BackupFile"
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Write-Host ""
 
 $ExportUri = "$BaseUrl/invoke/wm.server.packages/packageExport?packageName=$Package&exportACLs=true"
 
@@ -43,13 +43,13 @@ try {
 
     if ((Test-Path $BackupFile) -and ((Get-Item $BackupFile).Length -gt 0)) {
         $sizeMB = [math]::Round((Get-Item $BackupFile).Length / 1MB, 2)
-        Write-Host "✅ Backup saved: $BackupFile ($sizeMB MB)"
+        Write-Host " Backup saved: $BackupFile ($sizeMB MB)"
     } else {
-        Write-Error "❌ Backup file is empty or missing: $BackupFile"
+        Write-Error " Backup file is empty or missing: $BackupFile"
         exit 1
     }
 } catch {
-    Write-Error "❌ Backup failed: $_"
+    Write-Error " Backup failed: $_"
     if (Test-Path $BackupFile) { Remove-Item $BackupFile -Force }
     exit 1
 }

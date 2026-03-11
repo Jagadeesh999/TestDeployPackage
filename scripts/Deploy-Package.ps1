@@ -26,7 +26,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+#  Helpers 
 $BaseUrl   = "${Protocol}://${Host}:${Port}"
 $CredsBytes = [System.Text.Encoding]::ASCII.GetBytes("${User}:${Password}")
 $BasicAuth = "Basic " + [Convert]::ToBase64String($CredsBytes)
@@ -56,61 +56,61 @@ function Invoke-ISRequest {
             return $response.Content
         } catch {
             $attempt++
-            Write-Warning "  ⚠️  Attempt $attempt/$MaxRetries failed: $_"
+            Write-Warning "    Attempt $attempt/$MaxRetries failed: $_"
             if ($attempt -ge $MaxRetries) { throw }
             Start-Sleep -Seconds $RetryDelaySec
         }
     }
 }
 
-# ── Validation ────────────────────────────────────────────────────────────────
+#  Validation 
 if (-not (Test-Path $CompositeFile)) {
-    Write-Error "❌ Composite file not found: $CompositeFile"
+    Write-Error " Composite file not found: $CompositeFile"
     exit 1
 }
 
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Write-Host ""
 Write-Host "  webMethods IS Package Deployment (Windows)"
 Write-Host "  Target : $BaseUrl"
 Write-Host "  Package: $Package"
 Write-Host "  File   : $CompositeFile"
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Write-Host ""
 
-# ── Step 1: Upload composite ZIP ─────────────────────────────────────────────
-Write-Host "`n📦 Step 1: Uploading composite file..."
+#  Step 1: Upload composite ZIP 
+Write-Host "`n Step 1: Uploading composite file..."
 $fileBytes = [System.IO.File]::ReadAllBytes($CompositeFile)
 $uploadUri = "$BaseUrl/invoke/wm.server.packages/packageUpload?packageName=$Package"
 $result    = Invoke-ISRequest -Uri $uploadUri -Method "PUT" -ContentType "application/zip" -Body $fileBytes
 Write-Host "  Response: $result"
 
-# ── Step 2: Install package ───────────────────────────────────────────────────
-Write-Host "`n🔧 Step 2: Installing package..."
+#  Step 2: Install package 
+Write-Host "`n Step 2: Installing package..."
 $installUri = "$BaseUrl/invoke/wm.server.packages/packageInstall"
 $installBody = [System.Text.Encoding]::UTF8.GetBytes("packageName=$Package")
 $result = Invoke-ISRequest -Uri $installUri -Method "POST" -ContentType "application/x-www-form-urlencoded" -Body $installBody
 Write-Host "  Response: $result"
 
-# ── Step 3: Enable package ────────────────────────────────────────────────────
-Write-Host "`n✅ Step 3: Enabling package..."
+#  Step 3: Enable package 
+Write-Host "`n Step 3: Enabling package..."
 $result = Invoke-ISRequest -Uri "$BaseUrl/invoke/wm.server.packages/packageEnable?packageName=$Package"
 Write-Host "  Response: $result"
 
-# ── Step 4: Reload package ────────────────────────────────────────────────────
+#  Step 4: Reload package 
 if ($Reload) {
-    Write-Host "`n🔄 Step 4: Reloading package..."
+    Write-Host "`n Step 4: Reloading package..."
     $result = Invoke-ISRequest -Uri "$BaseUrl/invoke/wm.server.packages/packageLoad?packageName=$Package"
     Write-Host "  Response: $result"
 }
 
-# ── Step 5: Verify package state ─────────────────────────────────────────────
-Write-Host "`n🔍 Step 5: Verifying package state..."
+#  Step 5: Verify package state 
+Write-Host "`n Step 5: Verifying package state..."
 $statusResp = Invoke-ISRequest -Uri "$BaseUrl/invoke/wm.server.packages/packageStatus?packageName=$Package"
 
 if ($statusResp -match '"enabled"\s*:\s*"true"') {
-    Write-Host "  ✅ Package $Package is ENABLED and running."
+    Write-Host "   Package $Package is ENABLED and running."
 } else {
-    Write-Error "❌ Package $Package does not appear to be enabled. Response: $statusResp"
+    Write-Error " Package $Package does not appear to be enabled. Response: $statusResp"
     exit 1
 }
 
-Write-Host "`n🎉 Deployment of $Package completed successfully!"
+Write-Host "`n Deployment of $Package completed successfully!"

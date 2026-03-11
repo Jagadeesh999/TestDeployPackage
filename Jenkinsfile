@@ -157,8 +157,12 @@ pipeline {
                 expression { !params.SKIP_TESTS }
             }
             steps {
-                script {
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Run-Tests.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Package \"${params.PACKAGE_NAME}\" -ReportDir \"${BUILD_DIR}\\test-reports\""
+                withCredentials([usernamePassword(
+                    credentialsId: env.IS_CREDENTIALS_ID,
+                    usernameVariable: 'IS_USER',
+                    passwordVariable: 'IS_PASS'
+                )]) {
+                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Run-Tests.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -ReportDir \"${BUILD_DIR}\\test-reports\""
                 }
             }
             post {

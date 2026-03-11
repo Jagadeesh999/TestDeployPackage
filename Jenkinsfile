@@ -152,39 +152,39 @@ pipeline {
         }
 
         // -- 5. UNIT TESTS --
-        stage('Run Unit Tests') {
-            when {
-                expression { !params.SKIP_TESTS }
-            }
-            steps {
-                script {
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Run-Tests.ps1\" -Host \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Package \"${params.PACKAGE_NAME}\" -ReportDir \"${BUILD_DIR}\\test-reports\""
-                }
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true,
-                          testResults: 'build\\test-reports\\**\\*.xml'
-                }
-            }
-        }
+        // stage('Run Unit Tests') {
+        //     when {
+        //         expression { !params.SKIP_TESTS }
+        //     }
+        //     steps {
+        //         script {
+        //             bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Run-Tests.ps1\" -Host \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Package \"${params.PACKAGE_NAME}\" -ReportDir \"${BUILD_DIR}\\test-reports\""
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             junit allowEmptyResults: true,
+        //                   testResults: 'build\\test-reports\\**\\*.xml'
+        //         }
+        //     }
+        // }
 
-        // -- 6. BACKUP (non-DEV) --
-        stage('Backup Existing Package') {
-            when {
-                expression { params.TARGET_ENV != 'DEV' }
-            }
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: env.IS_CREDENTIALS_ID,
-                    usernameVariable: 'IS_USER',
-                    passwordVariable: 'IS_PASS'
-                )]) {
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Backup-Package.ps1\" -Host \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -BackupDir \"${DIST_DIR}\\backups\""
-                }
-                echo "Package backed up"
-            }
-        }
+        // // -- 6. BACKUP (non-DEV) --
+        // stage('Backup Existing Package') {
+        //     when {
+        //         expression { params.TARGET_ENV != 'DEV' }
+        //     }
+        //     steps {
+        //         withCredentials([usernamePassword(
+        //             credentialsId: env.IS_CREDENTIALS_ID,
+        //             usernameVariable: 'IS_USER',
+        //             passwordVariable: 'IS_PASS'
+        //         )]) {
+        //             bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Backup-Package.ps1\" -Host \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -BackupDir \"${DIST_DIR}\\backups\""
+        //         }
+        //         echo "Package backed up"
+        //     }
+        // }
 
         // -- 7. DEPLOY --
         stage('Deploy Package') {

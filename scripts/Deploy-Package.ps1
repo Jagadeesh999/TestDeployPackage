@@ -18,13 +18,14 @@ param(
     [Parameter(Mandatory)][string] $Password,
     [Parameter(Mandatory)][string] $Package,
     [Parameter(Mandatory)][string] $CompositeFile,
-    [bool]    $Reload         = $true,
+    [string]  $Reload         = "true",
     [int]     $MaxRetries     = 3,
     [int]     $RetryDelaySec  = 10
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$ReloadBool = ($Reload -eq "true" -or $Reload -eq "1" -or $Reload -eq "$true")
 
 #  Helpers 
 $BaseUrl   = "${Protocol}://${ISHost}:${Port}"
@@ -96,7 +97,7 @@ $result = Invoke-ISRequest -Uri "$BaseUrl/invoke/wm.server.packages/packageEnabl
 Write-Host "  Response: $result"
 
 #  Step 4: Reload package 
-if ($Reload) {
+if ($ReloadBool) {
     Write-Host "`n Step 4: Reloading package..."
     $result = Invoke-ISRequest -Uri "$BaseUrl/invoke/wm.server.packages/packageLoad?packageName=$Package"
     Write-Host "  Response: $result"

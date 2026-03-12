@@ -95,6 +95,7 @@ pipeline {
                     env.IS_PROTOCOL       = props.containsKey('is.protocol')   ? props['is.protocol']   : 'http'
                     env.IS_ADMIN_USER     = props.containsKey('is.admin.user') ? props['is.admin.user'] : 'Administrator'
                     env.IS_CREDENTIALS_ID = props['is.credentials.id']
+                    env.IS_PASS = props.containsKey('is.admin.password') ? props['is.admin.password'] : ''
                     echo "Loaded config for ${params.TARGET_ENV}: ${env.IS_HOST}:${env.IS_PORT}"
                 }
             }
@@ -152,26 +153,26 @@ pipeline {
         }
 
         // -- 5. UNIT TESTS --
-        // stage('Run Unit Tests') {
-        //     when {
-        //         expression { !params.SKIP_TESTS }
-        //     }
-        //     steps {
-        //         withCredentials([usernamePassword(
-        //             credentialsId: env.IS_CREDENTIALS_ID,
-        //             usernameVariable: 'IS_USER',
-        //             passwordVariable: 'IS_PASS'
-        //         )]) {
-        //             bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Run-Tests.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -ReportDir \"${BUILD_DIR}\\test-reports\""
-        //         }
-        //     }
-        //     post {
-        //         always {
-        //             junit allowEmptyResults: true,
-        //                   testResults: 'build\\test-reports\\**\\*.xml'
-        //         }
-        //     }
-        // }
+        stage('Run Unit Tests') {
+            when {
+                expression { !params.SKIP_TESTS }
+            }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: env.IS_CREDENTIALS_ID,
+                    usernameVariable: 'IS_USER',
+                    passwordVariable: 'IS_PASS'
+                )]) {
+                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Run-Tests.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -ReportDir \"${BUILD_DIR}\\test-reports\""
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true,
+                          testResults: 'build\\test-reports\\**\\*.xml'
+                }
+            }
+        }
 
         // -- 6. BACKUP (non-DEV) --
         stage('Backup Existing Package') {

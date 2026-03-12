@@ -136,7 +136,7 @@ if ($ReloadBool) {
     Write-Host ""
     Write-Host "[Step 3] Reloading package on IS..."
     $result = Invoke-ISRequest `
-        -Uri "$BaseUrl/invoke/wm.server.packages/packageLoad?packageName=$Package" `
+        -Uri "$BaseUrl/invoke/wm.server.packages/packageReload?packageName=$Package" `
         -Headers $Headers
     Write-Host "  Response: $result"
 } else {

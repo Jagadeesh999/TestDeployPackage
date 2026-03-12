@@ -199,7 +199,7 @@ pipeline {
                     usernameVariable: 'IS_USER',
                     passwordVariable: 'IS_PASS'
                 )]) {
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Deploy-Package.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -CompositeFile \"${env.COMPOSITE_FILE}\" -Reload ${params.RELOAD_PKG}"
+                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Deploy-Package.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"manage\" -Package \"${params.PACKAGE_NAME}\" -CompositeFile \"${env.COMPOSITE_FILE}\" -Reload ${params.RELOAD_PKG}"
                 }
                 echo "Package deployed to ${params.TARGET_ENV}"
             }

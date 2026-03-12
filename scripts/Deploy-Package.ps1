@@ -136,7 +136,7 @@ if ($ReloadBool) {
     Write-Host ""
     Write-Host "[Step 3] Reloading package on IS..."
     $result = Invoke-ISRequest `
-        -Uri "$BaseUrl/invoke/wm.server.packages/packageReload?packageName=$Package" `
+        -Uri "$BaseUrl/invoke/wm.server.packages/packageReload?package=$Package" `
         -Headers $Headers
     Write-Host "  Response: $result"
 } else {
@@ -148,7 +148,7 @@ if ($ReloadBool) {
 Write-Host ""
 Write-Host "[Step 4] Enabling package..."
 $result = Invoke-ISRequest `
-    -Uri "$BaseUrl/invoke/wm.server.packages/packageEnable?packageName=$Package" `
+    -Uri "$BaseUrl/invoke/wm.server.packages/packageEnable?package=$Package" `
     -Headers $Headers
 Write-Host "  Response: $result"
 
@@ -156,7 +156,7 @@ Write-Host "  Response: $result"
 Write-Host ""
 Write-Host "[Step 5] Verifying package state..."
 $statusResp = Invoke-ISRequest `
-    -Uri "$BaseUrl/invoke/wm.server.packages/packageStatus?packageName=$Package" `
+    -Uri "$BaseUrl/invoke/wm.server.packages/packageStatus?package=$Package" `
     -Headers $Headers
 
 if ($statusResp -match '"enabled"\s*:\s*"true"') {

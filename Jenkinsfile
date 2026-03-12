@@ -163,7 +163,7 @@ pipeline {
                     usernameVariable: 'IS_USER',
                     passwordVariable: 'IS_PASS'
                 )]) {
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Run-Tests.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -User \"${IS_USER}\" -Password \"manage" -Package \"${params.PACKAGE_NAME}\" -ReportDir \"${BUILD_DIR}\\test-reports\""
+                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Run-Tests.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -User \"${IS_USER}\" -Password \"manage\" -Package \"${params.PACKAGE_NAME}\" -ReportDir \"${BUILD_DIR}\\test-reports\""
                 }
             }
             post {

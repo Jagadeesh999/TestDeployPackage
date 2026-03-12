@@ -95,7 +95,7 @@ pipeline {
                     env.IS_PROTOCOL       = props.containsKey('is.protocol')   ? props['is.protocol']   : 'http'
                     env.IS_ADMIN_USER     = props.containsKey('is.admin.user') ? props['is.admin.user'] : 'Administrator'
                     env.IS_CREDENTIALS_ID = props['is.credentials.id']
-                    env.IS_PASS = props.containsKey('is.admin.password') ? props['is.admin.password'] : ''
+                    env.IS_PASS = props.containsKey('is.admin.password') ? props['is.admin.password'] : 'manage'
                     echo "Loaded config for ${params.TARGET_ENV}: ${env.IS_HOST}:${env.IS_PORT}"
                 }
             }

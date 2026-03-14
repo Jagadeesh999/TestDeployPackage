@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    ProjectAutomator Deployment Descriptor
+    Package  : TestDeployPackage
+    Tool     : C:\SoftwareAG11\IntegrationServer\instances\default\packages\WmDeployer\bin\projectautomator.bat
+
+    Jenkins substitutes these placeholders at runtime via Prepare-ProjectAutomator.ps1:
+      @@SOURCE_HOST@@       - IS host where the package is built/sourced (e.g. localhost)
+      @@SOURCE_PORT@@       - IS port (e.g. 5555)
+      @@SOURCE_USER@@       - IS admin username
+      @@SOURCE_PASSWORD@@   - IS admin password
+      @@TARGET_HOST@@       - Target IS host
+      @@TARGET_PORT@@       - Target IS port
+      @@TARGET_USER@@       - Target IS admin username
+      @@TARGET_PASSWORD@@   - Target IS admin password
+      @@PACKAGE_NAME@@      - Package name (e.g. TestDeployPackage)
+      @@BUILD_NUMBER@@      - Jenkins build number
+      @@DEPLOY_DIR@@        - Working directory for deployment artifacts
+-->
+<DeploymentProject name="TestDeployPackage-Deploy" version="1.0">
+
+    <!-- Source IS server (where package currently lives) -->
+    <Repository alias="SourceIS" type="IS">
+        <IS_URL>http://@@SOURCE_HOST@@:@@SOURCE_PORT@@</IS_URL>
+        <UserName>@@SOURCE_USER@@</UserName>
+        <Password>@@SOURCE_PASSWORD@@</Password>
+    </Repository>
+
+    <!-- Target IS server (where package will be deployed to) -->
+    <Repository alias="TargetIS" type="IS">
+        <IS_URL>http://@@TARGET_HOST@@:@@TARGET_PORT@@</IS_URL>
+        <UserName>@@TARGET_USER@@</UserName>
+        <Password>@@TARGET_PASSWORD@@</Password>
+    </Repository>
+
+    <!-- Deployment set: defines what to deploy -->
+    <DeploymentSet name="@@PACKAGE_NAME@@-Set">
+        <Repository alias="SourceIS"/>
+        <Asset type="Package" name="@@PACKAGE_NAME@@"/>
+    </DeploymentSet>
+
+    <!-- Deployment map: source -> target mapping -->
+    <DeploymentMap name="@@PACKAGE_NAME@@-Map">
+        <DeploymentSet name="@@PACKAGE_NAME@@-Set"/>
+        <TargetServer alias="TargetIS"/>
+    </DeploymentMap>
+
+    <!-- Candidate: a versioned snapshot of the deployment set -->
+    <DeploymentCandidate name="@@PACKAGE_NAME@@-v@@BUILD_NUMBER@@">
+        <DeploymentSet name="@@PACKAGE_NAME@@-Set"/>
+        <Description>Build @@BUILD_NUMBER@@ of @@PACKAGE_NAME@@</Description>
+    </DeploymentCandidate>
+
+    <!-- Deployment: ties map + candidate together and executes -->
+    <Deployment name="@@PACKAGE_NAME@@-Deployment">
+        <DeploymentMap name="@@PACKAGE_NAME@@-Map"/>
+        <DeploymentCandidate name="@@PACKAGE_NAME@@-v@@BUILD_NUMBER@@"/>
+        <!-- Overwrite existing package on target -->
+        <Variables>
+            <Variable name="overwrite" value="true"/>
+        </Variables>
+    </Deployment>
+
+</DeploymentProject>

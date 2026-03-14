@@ -200,7 +200,7 @@ pipeline {
             }
         }
 
-        // -- 7. DEPLOY --
+        // -- 7. DEPLOY (via ProjectAutomator) --
         stage('Deploy Package') {
             steps {
                 withCredentials([usernamePassword(
@@ -209,22 +209,22 @@ pipeline {
                     passwordVariable: 'IS_PASS'
                 )]) {
                     script {
-                        // Convert Groovy boolean to PowerShell boolean string
-                        def reloadFlag = params.RELOAD_PKG ? "true" : "false"
-                        bat 'PowerShell -ExecutionPolicy Bypass -File "%WORKSPACE%\\scripts\\Deploy-Package.ps1"' +
-                            " -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\"" +
-                            " -User \"%IS_USER%\" -Password \"manage\"" +
+                        bat "PowerShell -ExecutionPolicy Bypass -File \"%WORKSPACE%\\scripts\\Prepare-ProjectAutomator.ps1\"" +
+                            " -SourceHost \"${env.IS_HOST}\" -SourcePort \"${env.IS_PORT}\"" +
+                            " -SourceUser \"%IS_USER%\" -SourcePassword \"manage\"" +
+                            " -TargetHost \"${env.IS_HOST}\" -TargetPort \"${env.IS_PORT}\"" +
+                            " -TargetUser \"%IS_USER%\" -TargetPassword \"%IS_PASS%\"" +
                             " -Package \"${params.PACKAGE_NAME}\"" +
-                            " -CompositeFile \"${env.COMPOSITE_FILE}\"" +
-                            " -ISPackagesDir \"C:\\SoftwareAG11\\IntegrationServer\\instances\\default\\packages\"" +
-                            " -Reload ${reloadFlag}"
+                            " -BuildNumber \"${BUILD_NUMBER}\"" +
+                            " -WorkspaceDir \"%WORKSPACE%\"" +
+                            " -DeployDir \"%WORKSPACE%\\dist\""
                     }
                 }
                 echo "Package deployed to ${params.TARGET_ENV}"
             }
         }
 
-        // -- 8. HEALTH CHECK --
+                // -- 8. HEALTH CHECK --
         stage('Post-Deployment Health Check') {
             steps {
                 withCredentials([usernamePassword(

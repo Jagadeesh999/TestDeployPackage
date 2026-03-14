@@ -117,11 +117,11 @@ pipeline {
                     // Write a runtime build.properties by reading the template and substituting values
                     def template = readFile("${WORKSPACE}\\abe\\build.properties.template")
                     def buildProps = template
-                        .replace('build.output.dir=',       "build.output.dir=${distDirFwd}")
-                        .replace('build.source.dir=',       "build.source.dir=${packagesDirFwd}")
+                        .replace('build.output.dir=',         "build.output.dir=${distDirFwd}")
+                        .replace('build.source.dir=',         "build.source.dir=${packagesDirFwd}")
                         .replace('build.source.project.dir=', "build.source.project.dir=${packagesDirFwd}")
-                        .replace('build.version=1.0',       "build.version=${BUILD_NUMBER}")
-                        .replace('is.acdl.config.dir=',     "is.acdl.config.dir=${IS_CONFIG_DIR}")
+                        .replace('build.version=1.0',         "build.version=${BUILD_NUMBER}")
+                        .replace('is.acdl.config.dir=',       "is.acdl.config.dir=${IS_CONFIG_DIR}")
 
                     // Write build.properties into workspace root (build.bat expects it in CWD)
                     writeFile file: "${WORKSPACE}\\build.properties", text: buildProps
@@ -163,7 +163,12 @@ pipeline {
                     usernameVariable: 'IS_USER',
                     passwordVariable: 'IS_PASS'
                 )]) {
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Run-Tests.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -User \"${IS_USER}\" -Password \"manage\" -Package \"${params.PACKAGE_NAME}\" -ReportDir \"${BUILD_DIR}\\test-reports\""
+                    // Use %IS_USER% / %IS_PASS% (Windows env vars) - never interpolate secrets in GStrings
+                    bat 'PowerShell -ExecutionPolicy Bypass -File "%WORKSPACE%\\scripts\\Run-Tests.ps1"' +
+                        " -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\"" +
+                        " -User \"%IS_USER%\" -Password \"manage\"" +
+                        " -Package \"${params.PACKAGE_NAME}\"" +
+                        " -ReportDir \"${BUILD_DIR}\\test-reports\""
                 }
             }
             post {
@@ -185,7 +190,11 @@ pipeline {
                     usernameVariable: 'IS_USER',
                     passwordVariable: 'IS_PASS'
                 )]) {
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Backup-Package.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\" -BackupDir \"${DIST_DIR}\\backups\""
+                    bat 'PowerShell -ExecutionPolicy Bypass -File "%WORKSPACE%\\scripts\\Backup-Package.ps1"' +
+                        " -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\"" +
+                        " -User \"%IS_USER%\" -Password \"%IS_PASS%\"" +
+                        " -Package \"${params.PACKAGE_NAME}\"" +
+                        " -BackupDir \"${DIST_DIR}\\backups\""
                 }
                 echo "Package backed up"
             }
@@ -199,7 +208,16 @@ pipeline {
                     usernameVariable: 'IS_USER',
                     passwordVariable: 'IS_PASS'
                 )]) {
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Deploy-Package.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"manage\" -Package \"${params.PACKAGE_NAME}\" -CompositeFile \"${env.COMPOSITE_FILE}\" -Reload ${params.RELOAD_PKG}"
+                    script {
+                        // Convert Groovy boolean to PowerShell boolean string
+                        def reloadFlag = params.RELOAD_PKG ? '\$true' : '\$false'
+                        bat 'PowerShell -ExecutionPolicy Bypass -File "%WORKSPACE%\\scripts\\Deploy-Package.ps1"' +
+                            " -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\"" +
+                            " -User \"%IS_USER%\" -Password \"manage\"" +
+                            " -Package \"${params.PACKAGE_NAME}\"" +
+                            " -CompositeFile \"${env.COMPOSITE_FILE}\"" +
+                            " -Reload ${reloadFlag}"
+                    }
                 }
                 echo "Package deployed to ${params.TARGET_ENV}"
             }
@@ -213,7 +231,10 @@ pipeline {
                     usernameVariable: 'IS_USER',
                     passwordVariable: 'IS_PASS'
                 )]) {
-                    bat "PowerShell -ExecutionPolicy Bypass -File \"${WORKSPACE}\\scripts\\Health-Check.ps1\" -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\" -User \"${IS_USER}\" -Password \"${IS_PASS}\" -Package \"${params.PACKAGE_NAME}\""
+                    bat 'PowerShell -ExecutionPolicy Bypass -File "%WORKSPACE%\\scripts\\Health-Check.ps1"' +
+                        " -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\"" +
+                        " -User \"%IS_USER%\" -Password \"%IS_PASS%\"" +
+                        " -Package \"${params.PACKAGE_NAME}\""
                 }
                 echo "Health check passed"
             }

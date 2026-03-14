@@ -84,9 +84,15 @@ Write-Host "[Step 2] Running ProjectAutomator..."
 Write-Host "  Bat: $ProjectAutomatorBat"
 Write-Host "  Log: $LogFile"
 
+# Write a small wrapper bat to avoid path-with-spaces issues in Start-Process
+$WrapperBat = "$DeployDir\run-pa.bat"
+"@echo off" | Set-Content $WrapperBat
+"call `"$ProjectAutomatorBat`" `"$OutputFile`"" | Add-Content $WrapperBat
+
 $process = Start-Process `
-    -FilePath "cmd.exe" `
-    -ArgumentList "/c `"$ProjectAutomatorBat`" `"$OutputFile`" > `"$LogFile`" 2>&1" `
+    -FilePath $WrapperBat `
+    -RedirectStandardOutput $LogFile `
+    -RedirectStandardError  "$DeployDir\pa-err.log" `
     -Wait `
     -PassThru `
     -NoNewWindow
@@ -98,7 +104,12 @@ Write-Host "--------------------------------------------------"
 if (Test-Path $LogFile) {
     Get-Content $LogFile | ForEach-Object { Write-Host "  $_" }
 } else {
-    Write-Host "  No log file produced."
+    Write-Host "  No stdout log produced."
+}
+$ErrLog = "$DeployDir\pa-err.log"
+if ((Test-Path $ErrLog) -and (Get-Content $ErrLog -Raw).Trim()) {
+    Write-Host "  [STDERR]:"
+    Get-Content $ErrLog | ForEach-Object { Write-Host "  $_" }
 }
 Write-Host "--------------------------------------------------"
 

@@ -210,12 +210,13 @@ pipeline {
                 )]) {
                     script {
                         // Convert Groovy boolean to PowerShell boolean string
-                        def reloadFlag = params.RELOAD_PKG ? '\$true' : '\$false'
+                        def reloadFlag = params.RELOAD_PKG ? "true" : "false"
                         bat 'PowerShell -ExecutionPolicy Bypass -File "%WORKSPACE%\\scripts\\Deploy-Package.ps1"' +
                             " -ISHost \"${env.IS_HOST}\" -Port \"${env.IS_PORT}\" -Protocol \"${env.IS_PROTOCOL}\"" +
                             " -User \"%IS_USER%\" -Password \"manage\"" +
                             " -Package \"${params.PACKAGE_NAME}\"" +
                             " -CompositeFile \"${env.COMPOSITE_FILE}\"" +
+                            " -ISPackagesDir \"C:\\SoftwareAG11\\IntegrationServer\\instances\\default\\packages\"" +
                             " -Reload ${reloadFlag}"
                     }
                 }

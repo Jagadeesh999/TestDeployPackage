@@ -88,7 +88,7 @@ Write-Host "  Composite File  : $CompositeFile"
 Write-Host "  Reload          : $ReloadBool"
 Write-Host "--------------------------------------------------"
 
-# -- Step 1: Stop package before overwriting ----------------------------------
+# -- Step 1: Disable package before overwriting --------------------------------
 Write-Host ""
 Write-Host "[Step 1] Disabling package before update..."
 try {
@@ -106,32 +106,28 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $PackageTargetDir = Join-Path $ISPackagesDir $Package
 
-# Remove old package directory if it exists
 if (Test-Path $PackageTargetDir) {
     Write-Host "  Removing existing package directory: $PackageTargetDir"
     Remove-Item -Recurse -Force $PackageTargetDir
 }
 
-# Extract ZIP - the ZIP contains a folder named after the package
 $TempExtract = Join-Path $env:TEMP "IS_deploy_$Package"
 if (Test-Path $TempExtract) { Remove-Item -Recurse -Force $TempExtract }
 New-Item -ItemType Directory -Force -Path $TempExtract | Out-Null
 
 [System.IO.Compression.ZipFile]::ExtractToDirectory($CompositeFile, $TempExtract)
 
-# Find the extracted package folder and move it into IS packages dir
 $ExtractedFolder = Get-ChildItem -Path $TempExtract -Directory | Select-Object -First 1
 if ($ExtractedFolder) {
     Move-Item -Path $ExtractedFolder.FullName -Destination $PackageTargetDir -Force
 } else {
-    # ZIP was flat - move TempExtract itself
     Move-Item -Path $TempExtract -Destination $PackageTargetDir -Force
 }
 
 if (Test-Path $TempExtract) { Remove-Item -Recurse -Force $TempExtract -ErrorAction SilentlyContinue }
 Write-Host "  Package extracted to: $PackageTargetDir"
 
-# -- Step 3: Reload / load the package via IS REST API ------------------------
+# -- Step 3: Reload package via IS REST API ------------------------------------
 if ($ReloadBool) {
     Write-Host ""
     Write-Host "[Step 3] Reloading package on IS..."
@@ -144,7 +140,7 @@ if ($ReloadBool) {
     Write-Host "[Step 3] Skipping reload (Reload=false)"
 }
 
-# -- Step 4: Enable the package -----------------------------------------------
+# -- Step 4: Enable the package ------------------------------------------------
 Write-Host ""
 Write-Host "[Step 4] Enabling package..."
 $result = Invoke-ISRequest `
@@ -152,7 +148,7 @@ $result = Invoke-ISRequest `
     -Headers $Headers
 Write-Host "  Response: $result"
 
-# -- Step 5: Verify -----------------------------------------------------------
+# -- Step 5: Verify ------------------------------------------------------------
 Write-Host ""
 Write-Host "[Step 5] Verifying package state..."
 $statusResp = Invoke-ISRequest `
